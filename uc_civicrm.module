@@ -104,7 +104,7 @@ function uc_civicrm_admin() {
   natsort($options);
 
   // Get contribution types
-  $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
+  $sql = "SELECT id, name FROM civicrm_financial_type WHERE is_active = 1";
   $dao =& CRM_Core_DAO::executeQuery($sql, array());
   $types = array(0 => "Select a type...");
   while ($dao->fetch()) { $types[$dao->id] = $dao->name; }
@@ -153,7 +153,7 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
     if ($cid === FALSE) { return; }
 
     $cid = _uc_civicrm_add_update_contact($cid, $order);
-	
+
     if ($cid === FALSE) { return; }
 
     // add the contribution record
@@ -200,7 +200,7 @@ function _uc_civicrm_add_to_groups($cid) {
   // No groups specified
   $groups = variable_get('uc_civicrm_groups', '');
   if ($groups == '') { return; }
-  
+
   foreach ($groups as $id => $key) {
     if ($key != 0) {
       $params = array('contact_id' => $cid, 'group_id' => $key);
@@ -240,7 +240,7 @@ function _uc_civicrm_get_cid($order) {
   }
 
   // No matches found, so we will need to create a contact.
-  if (count($contact) == 0) { return 0; }  
+  if (count($contact) == 0) { return 0; }
   $cid = array_shift($contact);
   return $cid;
 }
@@ -262,7 +262,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
 	  'return.contact_last_name' =>1
     );
     $contact = civicrm_contact_search($params);
-	
+
     if (!empty($contact['is_error'])) {
       watchdog('uc_civicrm', 'civicrm_contact_search():' . $contact['error_message'], array(), WATCHDOG_ERROR);
       return FALSE;
@@ -272,7 +272,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     $contact['source']     = $contact['contact_source'];
     unset($contact['contact_source']);
   }
-  
+
   //Determine if the contact is new - added by bot
     require_once 'CRM/Core/BAO/Log.php';
   $log = new CRM_Core_DAO_Log();
@@ -294,7 +294,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   $contactStatus = 'old';
   if ( $diff < 30 ) {
     $contactStatus = 'new';
-  } 
+  }
 
   $contactParams = array(
     'id' => $cid,
@@ -492,10 +492,10 @@ function _uc_civicrm_add_contribution($cid, &$order) {
 
   $params = array(
     'contact_id' => $cid,
-    'receive_date' => date('Ymd'),
+    'receive_date' => date('Y-m-d H:i:s'),  // Changing to track time in contribution.
     'total_amount' => $roundedTotal,
-    'contribution_type_id' => variable_get('uc_civicrm_contribution_type', ''), // @FIXME this needs a sensible default
-    'payment_instrument_id' => _uc_civicrm_map_payment_instrument($order->payment_method),
+    'financial_type_id' => variable_get('uc_civicrm_contribution_type', ''), // @FIXME this needs a sensible default
+    'payment_instrument' => _uc_civicrm_map_payment_instrument($order->payment_method),
     'non_deductible_amount' => 00.00,
     'fee_amount' => 00.00,
     'net_amount' => $roundedTotal,
@@ -537,9 +537,10 @@ function _uc_civicrm_map_payment_instrument($paymentDevice) {
     "cod"    => 3,
     "check"  => 4,
   );
-
+$map = array("credit" => 'Credit Card', "cod" => 'Cash', "check" => 'Check', 'paypal_wps' => "Paypal");
   if (array_key_exists($paymentDevice, $map)) { $id = $map[$paymentDevice]; }
-  else { $id = 1; } // Another Ubercart payment method - good chance this is credit.
+  //else { $id = 1; } // Another Ubercart payment method - good chance this is credit.
+  else { $id = 'Credit Card'; }
 
   return $id;
 }
