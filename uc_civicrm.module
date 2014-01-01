@@ -315,7 +315,9 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     $lname = $order->billing_last_name;
   }
 
- $contact['last_name'] = $lname;
+  $contact['version'] = 3;
+  $contact['sequential'] = 1;
+  $contact['last_name'] = $lname;
   $contact['first_name'] = $fname;
   $contact['sort_name'] = "{$lname}, {$fname}";
   $contact['display_name'] = "{$fname} {$lname}";
@@ -324,7 +326,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   if (empty($contact['source'])) { $contact['source'] = 'Ubercart purchase'; }
   // Create contact or update existing contact
   if ( $contactStatus == 'new' && !$contactInfo['values'][$cid]['first_name'] && !$contactInfo['values'][$cid]['last_name']) {
-    $result = civicrm_contact_add($contact);
+    $result =  civicrm_api('Contact', 'create', $contact);
 if (!empty($result['is_error'])) {
    watchdog('uc_civicrm', 'civicrm_contact_add():' . $rc['error_message'], array(), WATCHDOG_ERROR);
    return FALSE;
